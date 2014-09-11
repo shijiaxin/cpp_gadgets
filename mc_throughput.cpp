@@ -10,15 +10,32 @@
 #include "timer.h"
 
 //variables used to calculate throughput
+typedef unsigned long uint64_t;
 pthread_t th[16];
 int epoch=0;
-int thrnum=4;
+int thrnum=2;
 int ready=0;
 pthread_mutex_t print_mutex;
 
 //varibales related with workload
+#define ARRAYSIZE 4*1024*1024/CACHELINESIZE //4M
+#define CACHELINESIZE 64 //64 bytes
+struct Cacheline {
+    char data[CACHELINESIZE];
+};
+
+
+Cacheline * array;
+pthread_spinlock_t * lockarray;
 
 void global_init(){
+    array = (Cacheline *)malloc(ARRAYSIZE * sizeof(Cacheline));    
+    memset(array, 0, ARRAYSIZE * sizeof(Cacheline)); 
+    lockarray=(pthread_spinlock_t *) malloc(ARRAYSIZE * sizeof(pthread_spinlock_t));
+    for(int i=0;i<ARRAYSIZE;i++){
+        pthread_spin_init(&lockarray[i], 0);
+    }
+    
     pthread_mutex_init(&print_mutex, NULL);
 }
 
@@ -34,8 +51,7 @@ void* thread_body(void *x) {
     CPU_SET(cpu, &mask);
     sched_setaffinity(0, sizeof(mask), &mask);
 
-    // thread_init(); if necessary
-    
+    // thread_init(); if necessary    
     __sync_fetch_and_add(&ready, 1);
     
     while(epoch == 0);
@@ -49,9 +65,14 @@ void* thread_body(void *x) {
     while(true) {
         /// do some work        
         {
-            int a=rand_r(&rseed);
+            uint64_t n=rand_r(&rseed) % ARRAYSIZE;
+            pthread_spin_lock(  &lockarray[n]);
+            for(int i=0;i<64;i++){
+                count+=array[n].data[i];
+                array[n].data[i]++;
+            }
+            pthread_spin_unlock(&lockarray[n]);
             //int a = rand();
-            count+=a;
         }
         loop++;
         if(lepoch < epoch) {
