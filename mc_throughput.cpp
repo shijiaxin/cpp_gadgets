@@ -2,19 +2,25 @@
 
 #include <unistd.h>    // for sleep
 #include <stdlib.h>
+#include <stdio.h>
 #include <pthread.h>
 #include <iostream>
+#include <string.h>
+
 #include "timer.h"
 
 //variables used to calculate throughput
-pthread_t th[64];
+pthread_t th[16];
 int epoch=0;
-int thrnum=2;
+int thrnum=4;
 int ready=0;
-
+pthread_mutex_t print_mutex;
 
 //varibales related with workload
 
+void global_init(){
+    pthread_mutex_init(&print_mutex, NULL);
+}
 
 void* thread_body(void *x) {
 
@@ -36,45 +42,57 @@ void* thread_body(void *x) {
     lepoch = epoch;
     
     int loop=0;
+    int count=0;            
     timer t1,t2;
 
+    unsigned int rseed=tid;
     while(true) {
         /// do some work        
         {
-        int count=0;
-            for(int i=0;i<1000000;i++){
-                count+=i;
-            }                    
+            int a=rand_r(&rseed);
+            //int a = rand();
+            count+=a;
         }
         loop++;
         if(lepoch < epoch) {
             // report and reset
             t2.reset();
+            pthread_mutex_lock (&print_mutex);
             std::cout<<"tid \t"<<tid<<"\t"
                      <<"loop\t"<<loop<<"\t"
                      <<"time\t"<<t2.diff(t1)<<std::endl;
+            pthread_mutex_unlock (&print_mutex);
+
+            while(epoch%2 ==0) ;
+
             t1.reset();
             lepoch = epoch;
             loop=0;
         }
+
     } 
 }
 
 int main(int argc, char** argv) {
     
 
+
+    global_init();    
     for(int i = 0; i < thrnum; i++)
         pthread_create(&th[i], NULL, thread_body, (void *)i);
-
 
     //Barriar to wait all threads become ready
     while (ready < thrnum);
     //Begin at the first epoch
     epoch = 1;
     sleep(5); //for warmup
-    epoch++;    
+    epoch++;
+    sleep(0.5);
+    epoch++;
     while(true) {
         sleep(5);
+        epoch++;
+        sleep(0.5);
         epoch++;
     }
     for(int i = 0; i < thrnum; i++)
