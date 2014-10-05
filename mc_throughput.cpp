@@ -1,5 +1,3 @@
-//g++ -lpthread mc_throughput.cpp -o mc_throughput
-
 #include <unistd.h>    // for sleep
 #include <stdlib.h>
 #include <stdio.h>
