@@ -26,12 +26,24 @@ void read_dirent(){
         }
 		printf("end reading dirent ... ...\n");
 }
+
+/*
+binary format:
+[ 0, 7] : "_HEADER_"
+[ 8,15] : size of each element
+[16,23] : number of elements
+[24,..] : elements
+*/
+void write_header(FILE * fp,uint64_t size,uint64_t n){
+	char header[8+8*2]="_HEADER_";
+	*((uint64_t *)(header+8))=size;
+	*((uint64_t *)(header+8+8))=n;
+	fwrite(header,sizeof(header[0]),sizeof(header)/sizeof(header[0]),fp);
+}
+
 void write_binary(){
     FILE *fp=fopen("output.bin.out","wb");
-    char header[8+8*2]="_HEADER_";
-    *((uint64_t *)(header+8))=2*sizeof(item_type)+sizeof(double); // size of element
-    *((uint64_t *)(header+8+8))=3;//number of element
-    fwrite(header,sizeof(header[0]),sizeof(header)/sizeof(header[0]),fp);
+	write_header(fp,2*sizeof(item_type)+sizeof(double),3);	
     element array [3];
     array[0].set(1,2,1.0);
     array[1].set(3,4,2.0);
@@ -57,8 +69,17 @@ void read_binary(){
     }
     fclose(fp);    
 }
+void overwrite_binary(){
+	write_binary();
+	FILE *fp=fopen("output.bin.out","r+b"); // "wb" mode  will clear old data
+	write_header(fp,2*sizeof(item_type)+sizeof(double),2);
+	fclose(fp);
+	read_binary();
+}
+
 int main(){
     write_binary();
     read_binary();
-	read_dirent();
+	//read_dirent();
+	overwrite_binary();
 }
