@@ -1,6 +1,7 @@
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdio.h>
+#include <unistd.h> //fread,fwrite,fopen
+#include <fcntl.h>  //fread,fwrite,fopen
+#include <stdio.h>  //printf
+#include <dirent.h> //dirent
 
 #define  uint64_t unsigned long long 
 #define item_type int
@@ -15,7 +16,16 @@ typedef struct element{
 		value=c;
 	}
 } element;
-
+void read_dirent(){
+        DIR* dir;
+        dirent* pdir;
+        dir = opendir(".");
+		printf("start reading dirent ... ...\n");
+        while (pdir = readdir(dir)) {
+			printf("%s\n",pdir->d_name);
+        }
+		printf("end reading dirent ... ...\n");
+}
 void write_binary(){
     FILE *fp=fopen("output.bin.out","wb");
     char header[8+8*2]="_HEADER_";
@@ -50,5 +60,5 @@ void read_binary(){
 int main(){
     write_binary();
     read_binary();
-
+	read_dirent();
 }
