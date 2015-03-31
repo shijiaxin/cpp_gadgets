@@ -1,5 +1,4 @@
 #include "timer.h"
-
 #include <iostream>
 using namespace std;
 
@@ -12,4 +11,6 @@ int main(){
     timer t2;
     cout<<"count\t"<<count<<endl
         <<"time \t"<<t2.diff(t1)<<endl;
+
 }
+
