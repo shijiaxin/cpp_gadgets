@@ -8,17 +8,19 @@ struct probvals {
   float cum_prob;              /* the cumulative access probability */
 };
 struct probvals *zdist;         /* the probability distribution  */
+int N;
 public:
   zipf(float theta,int N){
     get_zipf(theta,N);
   }
-void get_zipf(float theta, int N){
+void get_zipf(float theta, int n){
   float sum=0.0;
   float c=0.0;
   float expo;
   float sumc =0.0;
   int i;
   expo =  theta;
+  N=n;
   zdist = (struct probvals *)malloc(N*sizeof(struct probvals));
   /*
   * zipfian - p(i) = c / i ^^ (1 - theta) At x
@@ -52,27 +54,28 @@ void get_zipf(float theta, int N){
     zdist[i].cum_prob = sumc;
   }
 }
-int get_zipf_n(float prob,int N){
-  //[left,right)
+int get_zipf_n(double prob){
+  //find first number who > prob;
   int left=0;
   int right=N;
-  while(true){
-    if(left>=right-1){
-      return left;
+  if(prob<zdist[0].cum_prob)
+    return 0;
+  int pos=1;
+  while(pos<N){
+    if( zdist[pos].cum_prob>prob)
+      return pos;
+    int inc=1;
+    while((pos+2*inc<N) && (zdist[pos+2*inc].cum_prob<prob)){
+        inc*=2;
     }
-    int middle=(left+right)/2;
-    if(zdist[middle].cum_prob <= prob){
-      left=middle;
-    } else {
-      right=middle;
-    }
+    pos+=inc;
   }
+  return N-1;
 }
 
-int get_zipf_random(unsigned int* seed,int N){
-  int result=rand_r(seed);
-  int large_number=1<<30;
-  return get_zipf_n((result%large_number)*1.0/large_number,N);
+int get_zipf_random(unsigned int* seed){
+  double prob=(double)rand()/RAND_MAX;
+  return get_zipf_n(prob);
 }
 
 void print_first_n_element(int n){
